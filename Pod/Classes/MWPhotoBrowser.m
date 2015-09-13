@@ -1071,28 +1071,72 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
 #pragma mark - Navigation
 
+- (NSString *)navigationBarTitleForGridSelectionModeWithItemCount:(NSUInteger)numberOfItems {
+    if ([_delegate respondsToSelector:@selector(navigationBarTitleForGridSelectionModeWithItemCount:inPhotoBrowser:)]) {
+        return [_delegate navigationBarTitleForGridSelectionModeWithItemCount:numberOfItems inPhotoBrowser:self];
+    }
+
+    switch (_mediaType) {
+        case MWPhotoBrowserMediaTypePhotos:
+        case MWPhotoBrowserMediaTypeMixed:
+            return NSLocalizedString(@"Select Photos", nil);
+        case MWPhotoBrowserMediaTypeVideos:
+            return NSLocalizedString(@"Select Videos", nil);
+#ifndef DEBUG
+        default: abort();
+#endif
+    }
+}
+
+- (NSString *)navigationBarTitleForGridModeWithItemCount:(NSUInteger)numberOfItems {
+    if ([_delegate respondsToSelector:@selector(navigationBarTitleForGridModeWithItemCount:inPhotoBrowser:)]) {
+        return [_delegate navigationBarTitleForGridModeWithItemCount:numberOfItems inPhotoBrowser:self];
+    }
+
+    NSString *fmt;
+    switch (_mediaType) {
+        case MWPhotoBrowserMediaTypePhotos:
+        case MWPhotoBrowserMediaTypeMixed:
+            if (numberOfItems == 1) {
+                fmt = NSLocalizedString(@"XX photo", @"Used in the context: '1 photo'");
+            } else {
+                fmt =  NSLocalizedString(@"XX photos", @"Used in the context: '3 photos'");
+            }
+            return [fmt stringByReplacingOccurrencesOfString:@"XX" withString:[NSString stringWithFormat:@"%lu", (unsigned long)numberOfItems]];
+        case MWPhotoBrowserMediaTypeVideos:
+            if (numberOfItems == 1) {
+                fmt = NSLocalizedString(@"XX video", @"Used in the context: '1 video'");
+            } else {
+                fmt =  NSLocalizedString(@"XX videos", @"Used in the context: '3 videos'");
+            }
+            return [fmt stringByReplacingOccurrencesOfString:@"XX" withString:[NSString stringWithFormat:@"%lu", (unsigned long)numberOfItems]];
+#ifndef DEBUG
+        default: abort();
+#endif
+    }
+}
+
+- (NSString *)navigationBarTitleForSingleModeWithItemIndex:(NSUInteger)itemIndex itemCount:(NSUInteger)numberOfItems {
+    if ([_delegate respondsToSelector:@selector(photoBrowser:titleForPhotoAtIndex:)]) {
+        return [_delegate photoBrowser:self titleForPhotoAtIndex:_currentPageIndex];
+    }
+
+    NSString *fmt = NSLocalizedString(@"XX of YY", @"Used in the context: 'Showing 1 of 3 items'");
+    return [[fmt stringByReplacingOccurrencesOfString:@"XX" withString:[NSString stringWithFormat:@"%lu", (unsigned long)(itemIndex+1)]] stringByReplacingOccurrencesOfString:@"YY" withString:[NSString stringWithFormat:@"%lu", (unsigned long)numberOfItems]];
+}
+
 - (void)updateNavigation {
     
 	// Title
     NSUInteger numberOfPhotos = [self numberOfPhotos];
     if (_gridController) {
         if (_gridController.selectionMode) {
-            self.title = NSLocalizedString(@"Select Photos", nil);
+            self.title = [self navigationBarTitleForGridSelectionModeWithItemCount:numberOfPhotos];
         } else {
-            NSString *photosText;
-            if (numberOfPhotos == 1) {
-                photosText = NSLocalizedString(@"photo", @"Used in the context: '1 photo'");
-            } else {
-                photosText = NSLocalizedString(@"photos", @"Used in the context: '3 photos'");
-            }
-            self.title = [NSString stringWithFormat:@"%lu %@", (unsigned long)numberOfPhotos, photosText];
+            self.title = [self navigationBarTitleForGridModeWithItemCount:numberOfPhotos];
         }
     } else if (numberOfPhotos > 1) {
-        if ([_delegate respondsToSelector:@selector(photoBrowser:titleForPhotoAtIndex:)]) {
-            self.title = [_delegate photoBrowser:self titleForPhotoAtIndex:_currentPageIndex];
-        } else {
-            self.title = [NSString stringWithFormat:@"%lu %@ %lu", (unsigned long)(_currentPageIndex+1), NSLocalizedString(@"of", @"Used in the context: 'Showing 1 of 3 items'"), (unsigned long)numberOfPhotos];
-        }
+        self.title = [self navigationBarTitleForSingleModeWithItemIndex:_currentPageIndex itemCount:numberOfPhotos];
 	} else {
 		self.title = nil;
 	}

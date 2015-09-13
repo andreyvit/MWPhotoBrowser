@@ -20,6 +20,12 @@
 
 @class MWPhotoBrowser;
 
+typedef NS_ENUM(NSInteger, MWPhotoBrowserMediaType) {
+    MWPhotoBrowserMediaTypeMixed,
+    MWPhotoBrowserMediaTypePhotos,
+    MWPhotoBrowserMediaTypeVideos,
+};
+
 @protocol MWPhotoBrowserDelegate <NSObject>
 
 - (NSUInteger)numberOfPhotosInPhotoBrowser:(MWPhotoBrowser *)photoBrowser;
@@ -36,6 +42,9 @@
 - (void)photoBrowser:(MWPhotoBrowser *)photoBrowser photoAtIndex:(NSUInteger)index selectedChanged:(BOOL)selected;
 - (void)photoBrowserDidFinishModalPresentation:(MWPhotoBrowser *)photoBrowser;
 
+- (NSString *)navigationBarTitleForGridSelectionModeWithItemCount:(NSUInteger)numberOfItems inPhotoBrowser:(MWPhotoBrowser *)photoBrowser;
+- (NSString *)navigationBarTitleForGridModeWithItemCount:(NSUInteger)numberOfItems inPhotoBrowser:(MWPhotoBrowser *)photoBrowser;
+
 @end
 
 @interface MWPhotoBrowser : UIViewController <UIScrollViewDelegate, UIActionSheetDelegate>
@@ -51,6 +60,7 @@
 @property (nonatomic) BOOL startOnGrid;
 @property (nonatomic) BOOL autoPlayOnAppear;
 @property (nonatomic) NSUInteger delayToHideElements;
+@property (nonatomic) MWPhotoBrowserMediaType mediaType;
 @property (nonatomic, readonly) NSUInteger currentIndex;
 
 // Customise image selection icons as they are the only icons with a colour tint
