@@ -694,6 +694,18 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     return value;
 }
 
+- (BOOL)canSelectPhotoAtIndex:(NSUInteger)idx {
+    if (_displaySelectionButtons) {
+        if ([self.delegate respondsToSelector:@selector(canSelectPhotoAtIndex:inPhotoBrowser:)]) {
+            return [self.delegate canSelectPhotoAtIndex:idx inPhotoBrowser:self];
+        } else {
+            return YES;
+        }
+    } else {
+        return NO;
+    }
+}
+
 - (void)setPhotoSelected:(BOOL)selected atIndex:(NSUInteger)index {
     if (_displaySelectionButtons) {
         if ([self.delegate respondsToSelector:@selector(photoBrowser:photoAtIndex:selectedChanged:)]) {
@@ -829,7 +841,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
             }
             
             // Add selected button
-            if (self.displaySelectionButtons) {
+            if ([self canSelectPhotoAtIndex:index]) {
                 UIButton *selectedButton = [UIButton buttonWithType:UIButtonTypeCustom];
                 [selectedButton setImage:[UIImage imageForResourcePath:@"MWPhotoBrowser.bundle/ImageSelectedOff" ofType:@"png" inBundle:[NSBundle bundleForClass:[self class]]] forState:UIControlStateNormal];
                 UIImage *selectedOnImage;
@@ -1190,7 +1202,6 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
 - (void)selectedButtonTapped:(id)sender {
     UIButton *selectedButton = (UIButton *)sender;
-    selectedButton.selected = !selectedButton.selected;
     NSUInteger index = NSUIntegerMax;
     for (MWZoomingScrollView *page in _visiblePages) {
         if (page.selectedButton == selectedButton) {
@@ -1199,7 +1210,10 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         }
     }
     if (index != NSUIntegerMax) {
-        [self setPhotoSelected:selectedButton.selected atIndex:index];
+        if ([self canSelectPhotoAtIndex:index]) {
+            selectedButton.selected = !selectedButton.selected;
+            [self setPhotoSelected:selectedButton.selected atIndex:index];
+        }
     }
 }
 

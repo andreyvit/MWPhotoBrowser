@@ -128,6 +128,7 @@
 - (id<MWPhoto>)thumbPhotoAtIndex:(NSUInteger)index;
 - (UIImage *)imageForPhoto:(id<MWPhoto>)photo;
 - (BOOL)photoIsSelectedAtIndex:(NSUInteger)index;
+- (BOOL)canSelectPhotoAtIndex:(NSUInteger)idx;
 - (void)setPhotoSelected:(BOOL)selected atIndex:(NSUInteger)index;
 - (void)loadAdjacentPhotosIfNecessary:(id<MWPhoto>)photo;
 - (void)releaseAllUnderlyingPhotos:(BOOL)preserveCurrent;

@@ -159,7 +159,7 @@
     id <MWPhoto> photo = [_browser thumbPhotoAtIndex:indexPath.row];
     cell.photo = photo;
     cell.gridController = self;
-    cell.selectionMode = _selectionMode;
+    cell.selectionMode = _selectionMode && [_browser canSelectPhotoAtIndex:indexPath.row];
     cell.isSelected = [_browser photoIsSelectedAtIndex:indexPath.row];
     cell.index = indexPath.row;
     UIImage *img = [_browser imageForPhoto:photo];
