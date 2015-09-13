@@ -66,6 +66,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     _previousPageIndex = NSUIntegerMax;
     _displayActionButton = YES;
     _displayNavArrows = NO;
+    _allowsMultipleSelection = YES;
     _zoomPhotosToFill = YES;
     _performingLayout = NO; // Reset on view did appear
     _rotating = NO;
