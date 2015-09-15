@@ -17,4 +17,6 @@
 
 - (void)adjustOffsetsAsRequired;
 
+- (void)updateSelectionStateForItemAtIndex:(NSUInteger)idx;
+
 @end

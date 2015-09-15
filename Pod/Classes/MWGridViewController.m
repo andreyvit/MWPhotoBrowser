@@ -54,6 +54,13 @@
     return self;
 }
 
+- (void)updateSelectionStateForItemAtIndex:(NSUInteger)idx {
+    MWGridCell *cell = [self.collectionView cellForItemAtIndexPath:[NSIndexPath indexPathForItem:idx inSection:0]];
+    if (cell) {
+        [cell updateSelectionState];
+    }
+}
+
 #pragma mark - View
 
 - (void)viewDidLoad {

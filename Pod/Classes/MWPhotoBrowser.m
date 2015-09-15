@@ -17,7 +17,11 @@
 
 static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
-@implementation MWPhotoBrowser
+@implementation MWPhotoBrowser {
+    BOOL _delegateRespondsToIsPhotoSelectedAtIndex;
+    BOOL _delegateRespondsToSelectionChanged;
+    NSMutableIndexSet *_indexesOfSelectedItems;
+}
 
 #pragma mark - Init
 
@@ -30,7 +34,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
 - (id)initWithDelegate:(id <MWPhotoBrowserDelegate>)delegate {
     if ((self = [self init])) {
-        _delegate = delegate;
+        [self setDelegate:delegate];
 	}
 	return self;
 }
@@ -67,6 +71,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     _displayActionButton = YES;
     _displayNavArrows = NO;
     _allowsMultipleSelection = YES;
+    _allowsEmptySelection = YES;
     _zoomPhotosToFill = YES;
     _performingLayout = NO; // Reset on view did appear
     _rotating = NO;
@@ -97,6 +102,23 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     [self releaseAllUnderlyingPhotos:NO];
     [[SDImageCache sharedImageCache] clearMemory]; // clear memory
+}
+
+- (void)setDelegate:(id<MWPhotoBrowserDelegate>)delegate {
+    if (_delegate != delegate) {
+        _delegate = delegate;
+        _delegateRespondsToIsPhotoSelectedAtIndex = [_delegate respondsToSelector:@selector(photoBrowser:isPhotoSelectedAtIndex:)];
+        _delegateRespondsToSelectionChanged = [_delegate respondsToSelector:@selector(photoBrowser:photoAtIndex:selectedChanged:)];
+        if (_delegateRespondsToIsPhotoSelectedAtIndex) {
+            if (_indexesOfSelectedItems) {
+                _indexesOfSelectedItems = nil;
+            }
+        } else {
+            if (!_indexesOfSelectedItems) {
+                _indexesOfSelectedItems = [NSMutableIndexSet new];
+            }
+        }
+    }
 }
 
 - (void)releaseAllUnderlyingPhotos:(BOOL)preserveCurrent {
@@ -686,13 +708,15 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 }
 
 - (BOOL)photoIsSelectedAtIndex:(NSUInteger)index {
-    BOOL value = NO;
     if (_displaySelectionButtons) {
-        if ([self.delegate respondsToSelector:@selector(photoBrowser:isPhotoSelectedAtIndex:)]) {
-            value = [self.delegate photoBrowser:self isPhotoSelectedAtIndex:index];
+        if (_delegateRespondsToIsPhotoSelectedAtIndex) {
+            return [self.delegate photoBrowser:self isPhotoSelectedAtIndex:index];
+        } else {
+            return [_indexesOfSelectedItems containsIndex:index];
         }
+    } else {
+        return NO;
     }
-    return value;
 }
 
 - (BOOL)canSelectPhotoAtIndex:(NSUInteger)idx {
@@ -707,11 +731,90 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     }
 }
 
-- (void)setPhotoSelected:(BOOL)selected atIndex:(NSUInteger)index {
+- (BOOL)setPhotoSelected:(BOOL)selected atIndex:(NSUInteger)idx {
+    if (![self canSelectPhotoAtIndex:idx]) {
+        return NO;
+    }
     if (_displaySelectionButtons) {
-        if ([self.delegate respondsToSelector:@selector(photoBrowser:photoAtIndex:selectedChanged:)]) {
-            [self.delegate photoBrowser:self photoAtIndex:index selectedChanged:selected];
+        if (!_allowsMultipleSelection && _delegateRespondsToIsPhotoSelectedAtIndex) {
+            [NSException raise:NSInternalInconsistencyException format:@"Single-selection mode is not supported when delegate implements isPhotoSelectedAtIndex"];
+            abort();
         }
+
+        BOOL oldState = [self photoIsSelectedAtIndex:idx];
+        if (oldState == selected) {
+            return NO;
+        }
+
+        if (!selected && !_allowsEmptySelection) {
+            if (self.indexesOfSelectedItems.count == 1) {
+                return NO;
+            }
+        }
+
+        if (selected && !_allowsMultipleSelection) {
+            [self deselectAll];
+        }
+
+        if (!_delegateRespondsToIsPhotoSelectedAtIndex) {
+            if (selected) {
+                [_indexesOfSelectedItems addIndex:idx];
+            } else {
+                [_indexesOfSelectedItems removeIndex:idx];
+            }
+        }
+
+        if (_delegateRespondsToSelectionChanged) {
+            [self.delegate photoBrowser:self photoAtIndex:idx selectedChanged:selected];
+        }
+
+        [_gridController updateSelectionStateForItemAtIndex:idx];
+    }
+    return YES;
+}
+
+- (NSIndexSet *)indexesOfSelectedItems {
+    if (_delegateRespondsToIsPhotoSelectedAtIndex) {
+        NSUInteger count = self.numberOfPhotos;
+        NSMutableIndexSet *indexSet = [NSMutableIndexSet new];
+        for (NSUInteger idx = 0; idx < count; ++idx) {
+            if ([_delegate photoBrowser:self isPhotoSelectedAtIndex:idx]) {
+                [indexSet addIndex:idx];
+            }
+        }
+        return indexSet;
+    } else {
+        return _indexesOfSelectedItems;
+    }
+}
+
+- (NSUInteger)indexOfSingleSelectedItem {
+    NSIndexSet *indexSet = self.indexesOfSelectedItems;
+    if (indexSet.count > 1) {
+        return NSNotFound;
+    } else {
+        return [indexSet firstIndex];
+    }
+}
+
+- (void)setIndexOfSingleSelectedItem:(NSUInteger)idx {
+    if (idx != self.indexOfSingleSelectedItem) {
+        [self deselectAll];
+        [self setPhotoSelected:YES atIndex:idx];
+    }
+}
+
+- (void)deselectAll {
+    NSIndexSet *set = [self.indexesOfSelectedItems copy];
+    if (!_delegateRespondsToIsPhotoSelectedAtIndex) {
+        [_indexesOfSelectedItems removeAllIndexes];
+    }
+
+    for (NSUInteger idx = [set firstIndex]; idx != NSNotFound; idx = [set indexGreaterThanIndex:idx]) {
+        if (_delegateRespondsToSelectionChanged) {
+            [self.delegate photoBrowser:self photoAtIndex:idx selectedChanged:NO];
+        }
+        [_gridController updateSelectionStateForItemAtIndex:idx];
     }
 }
 
@@ -1211,9 +1314,8 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         }
     }
     if (index != NSUIntegerMax) {
-        if ([self canSelectPhotoAtIndex:index]) {
+        if ([self setPhotoSelected:!selectedButton.selected atIndex:index]) {
             selectedButton.selected = !selectedButton.selected;
-            [self setPhotoSelected:selectedButton.selected atIndex:index];
         }
     }
 }

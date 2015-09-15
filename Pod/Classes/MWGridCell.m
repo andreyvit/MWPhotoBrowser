@@ -158,10 +158,11 @@
 }
 
 - (void)selectionButtonPressed {
-    if ([_gridController.browser canSelectPhotoAtIndex:_index]) {
-        _selectedButton.selected = !_selectedButton.selected;
-        [_gridController.browser setPhotoSelected:_selectedButton.selected atIndex:_index];
-    }
+    [_gridController.browser setPhotoSelected:!_selectedButton.selected atIndex:_index];
+}
+
+- (void)updateSelectionState {
+    _selectedButton.selected = [_gridController.browser photoIsSelectedAtIndex:_index];
 }
 
 #pragma mark - Touches

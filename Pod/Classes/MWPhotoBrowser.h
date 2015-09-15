@@ -56,6 +56,7 @@ typedef NS_ENUM(NSInteger, MWPhotoBrowserMediaType) {
 @property (nonatomic) BOOL displayActionButton;
 @property (nonatomic) BOOL displaySelectionButtons;
 @property (nonatomic) BOOL allowsMultipleSelection;
+@property (nonatomic) BOOL allowsEmptySelection;
 @property (nonatomic) BOOL alwaysShowControls;
 @property (nonatomic) BOOL enableGrid;
 @property (nonatomic) BOOL enableSwipeToDismiss;
@@ -65,7 +66,8 @@ typedef NS_ENUM(NSInteger, MWPhotoBrowserMediaType) {
 @property (nonatomic) MWPhotoBrowserMediaType mediaType;
 @property (nonatomic, readonly) NSUInteger currentIndex;
 
-@property (nonatomic, readonly) NSInteger indexOfSingleSelectedItem;
+@property (nonatomic) NSUInteger indexOfSingleSelectedItem;
+@property (nonatomic) NSIndexSet *indexesOfSelectedItems;
 
 // Customise image selection icons as they are the only icons with a colour tint
 // Icon should be located in the app's main bundle

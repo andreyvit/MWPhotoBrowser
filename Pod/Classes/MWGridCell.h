@@ -20,4 +20,6 @@
 
 - (void)displayImage;
 
+- (void)updateSelectionState;
+
 @end
