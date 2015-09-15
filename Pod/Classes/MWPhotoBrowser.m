@@ -1192,6 +1192,10 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         return [_delegate navigationBarTitleForGridSelectionModeWithItemCount:numberOfItems inPhotoBrowser:self];
     }
 
+    if (_navigationBarTitle) {
+        return _navigationBarTitle;
+    }
+
     switch (_mediaType) {
         case MWPhotoBrowserMediaTypePhotos:
         case MWPhotoBrowserMediaTypeMixed:
@@ -1207,6 +1211,10 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 - (NSString *)navigationBarTitleForGridModeWithItemCount:(NSUInteger)numberOfItems {
     if ([_delegate respondsToSelector:@selector(navigationBarTitleForGridModeWithItemCount:inPhotoBrowser:)]) {
         return [_delegate navigationBarTitleForGridModeWithItemCount:numberOfItems inPhotoBrowser:self];
+    }
+
+    if (_navigationBarTitle) {
+        return _navigationBarTitle;
     }
 
     NSString *fmt;
@@ -1271,6 +1279,11 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         _actionButton.tintColor = nil;
     }
 	
+}
+
+- (void)setNavigationBarTitle:(NSString *)title {
+    _navigationBarTitle = title;
+    [self updateNavigation];
 }
 
 - (void)jumpToPageAtIndex:(NSUInteger)index animated:(BOOL)animated {

@@ -69,6 +69,8 @@ typedef NS_ENUM(NSInteger, MWPhotoBrowserMediaType) {
 @property (nonatomic) NSUInteger indexOfSingleSelectedItem;
 @property (nonatomic) NSIndexSet *indexesOfSelectedItems;
 
+@property (nonatomic) NSString *navigationBarTitle;
+
 // Customise image selection icons as they are the only icons with a colour tint
 // Icon should be located in the app's main bundle
 @property (nonatomic, strong) NSString *customImageSelectedIconName;
