@@ -21,6 +21,10 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     BOOL _delegateRespondsToIsPhotoSelectedAtIndex;
     BOOL _delegateRespondsToSelectionChanged;
     NSMutableIndexSet *_indexesOfSelectedItems;
+
+    BOOL _presentedWithBackButton;
+    UIBarButtonItem *_closeButton;
+    UIBarButtonItem *_cancelButton;
 }
 
 #pragma mark - Init
@@ -226,11 +230,13 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 	// Setup pages
     [_visiblePages removeAllObjects];
     [_recycledPages removeAllObjects];
-    
+
+    _presentedWithBackButton = ([self.navigationController.viewControllers objectAtIndex:0] != self);
+
     // Navigation buttons
-    if ([self.navigationController.viewControllers objectAtIndex:0] == self) {
+    if (!_presentedWithBackButton) {
         // We're first on stack so show done button
-        _doneButton = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Done", nil) style:UIBarButtonItemStylePlain target:self action:@selector(doneButtonPressed:)];
+        _doneButton = [[UIBarButtonItem alloc] initWithTitle:_doneButtonTitle ?: NSLocalizedString(@"Done", nil) style:UIBarButtonItemStylePlain target:self action:@selector(doneButtonPressed:)];
         // Set appearance
         [_doneButton setBackgroundImage:nil forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
         [_doneButton setBackgroundImage:nil forState:UIControlStateNormal barMetrics:UIBarMetricsLandscapePhone];
@@ -238,7 +244,6 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [_doneButton setBackgroundImage:nil forState:UIControlStateHighlighted barMetrics:UIBarMetricsLandscapePhone];
         [_doneButton setTitleTextAttributes:[NSDictionary dictionary] forState:UIControlStateNormal];
         [_doneButton setTitleTextAttributes:[NSDictionary dictionary] forState:UIControlStateHighlighted];
-        self.navigationItem.rightBarButtonItem = _doneButton;
     } else {
         // We're not first so show back button
         UIViewController *previousViewController = [self.navigationController.viewControllers objectAtIndex:self.navigationController.viewControllers.count-2];
@@ -254,6 +259,9 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         _previousViewControllerBackButton = previousViewController.navigationItem.backBarButtonItem; // remember previous
         previousViewController.navigationItem.backBarButtonItem = newBackButton;
     }
+
+    _closeButton = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Close", nil) style:UIBarButtonItemStylePlain target:self action:@selector(closeButtonPressed:)];
+    _cancelButton = [[UIBarButtonItem alloc] initWithTitle:_cancelButtonTitle ?: NSLocalizedString(@"Cancel", nil) style:UIBarButtonItemStylePlain target:self action:@selector(cancelButtonPressed:)];
 
     // Toolbar items
     BOOL hasItems = NO;
@@ -309,6 +317,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     
     // Update nav
 	[self updateNavigation];
+    [self updateNavigationBarButtonsAnimated:NO];
     
     // Content offset
 	_pagingScrollView.contentOffset = [self contentOffsetForPageAtIndex:_currentPageIndex];
@@ -719,10 +728,22 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     }
 }
 
-- (BOOL)canSelectPhotoAtIndex:(NSUInteger)idx {
+- (BOOL)shouldDisplaySelectionControlForItemAtIndex:(NSUInteger)idx {
     if (_displaySelectionButtons) {
-        if ([self.delegate respondsToSelector:@selector(canSelectPhotoAtIndex:inPhotoBrowser:)]) {
-            return [self.delegate canSelectPhotoAtIndex:idx inPhotoBrowser:self];
+        if ([self.delegate respondsToSelector:@selector(shouldDisplaySelectionControlForItemAtIndex:inPhotoBrowser:)]) {
+            return [self.delegate shouldDisplaySelectionControlForItemAtIndex:idx inPhotoBrowser:self];
+        } else {
+            return YES;
+        }
+    } else {
+        return NO;
+    }
+}
+
+- (BOOL)shouldSelectItemAtIndex:(NSUInteger)idx {
+    if (_displaySelectionButtons) {
+        if ([self.delegate respondsToSelector:@selector(shouldSelectItemAtIndex:inPhotoBrowser:)]) {
+            return [self.delegate shouldSelectItemAtIndex:idx inPhotoBrowser:self];
         } else {
             return YES;
         }
@@ -732,7 +753,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 }
 
 - (BOOL)setPhotoSelected:(BOOL)selected atIndex:(NSUInteger)idx {
-    if (![self canSelectPhotoAtIndex:idx]) {
+    if (![self shouldSelectItemAtIndex:idx]) {
         return NO;
     }
     if (_displaySelectionButtons) {
@@ -947,7 +968,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
             }
             
             // Add selected button
-            if ([self canSelectPhotoAtIndex:index]) {
+            if ([self shouldDisplaySelectionControlForItemAtIndex:index]) {
                 UIButton *selectedButton = [UIButton buttonWithType:UIButtonTypeCustom];
                 [selectedButton setImage:[UIImage imageForResourcePath:@"MWPhotoBrowser.bundle/ImageSelectedOff" ofType:@"png" inBundle:[NSBundle bundleForClass:[self class]]] forState:UIControlStateNormal];
                 UIImage *selectedOnImage;
@@ -1289,8 +1310,59 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 	
 }
 
+- (BOOL)isOnSecondaryScreen {
+    if (self.enableGrid) {
+        if (self.startOnGrid && !_gridController) {
+            return YES;
+        } else if (!self.startOnGrid && _gridController) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+- (void)updateNavigationBarButtonsAnimated:(BOOL)animated {
+    if (!_leftNavigationBarButton) {
+        UIBarButtonItem *button = self.navigationItem.leftBarButtonItem;
+        if (button) {
+            if (button != _closeButton && button != _cancelButton) {
+                _leftNavigationBarButton = button;
+            }
+        }
+    }
+    if (!_rightNavigationBarButton) {
+        UIBarButtonItem *button = self.navigationItem.rightBarButtonItem;
+        if (button) {
+            if (button != _closeButton && button != _doneButton) {
+                _rightNavigationBarButton = button;
+            }
+        }
+    }
+
+    UIBarButtonItem *left = nil;
+    UIBarButtonItem *right = nil;
+
+    if ([self isOnSecondaryScreen]) {
+        if (_presentedWithBackButton) {
+            right = _closeButton;
+        } else {
+            left = _closeButton;
+        }
+    } else {
+        left = _leftNavigationBarButton ?: (_showsCancelButton ? _cancelButton : nil);
+        right = _rightNavigationBarButton ?: _doneButton;
+    }
+
+    if (left != self.navigationItem.leftBarButtonItem) {
+        [self.navigationItem setLeftBarButtonItem:left animated:animated];
+    }
+    if (right != self.navigationItem.rightBarButtonItem) {
+        [self.navigationItem setRightBarButtonItem:right animated:animated];
+    }
+}
+
 - (void)setNavigationBarTitle:(NSString *)title {
-    _navigationBarTitle = title;
+    _navigationBarTitle = [title copy];
     [self updateNavigation];
 }
 
@@ -1485,17 +1557,10 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     // Perform any adjustments
     [_gridController.view layoutIfNeeded];
     [_gridController adjustOffsetsAsRequired];
-    
-    // Hide action button on nav bar if it exists
-    if (self.navigationItem.rightBarButtonItem == _actionButton) {
-        _gridPreviousRightNavItem = _actionButton;
-        [self.navigationItem setRightBarButtonItem:nil animated:YES];
-    } else {
-        _gridPreviousRightNavItem = nil;
-    }
-    
+
     // Update
     [self updateNavigation];
+    [self updateNavigationBarButtonsAnimated:animated];
     [self setControlsHidden:NO animated:YES permanent:YES];
     
     // Animate grid in and photo scroller out
@@ -1518,11 +1583,6 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     // Remember previous content offset
     _currentGridContentOffset = _gridController.collectionView.contentOffset;
     
-    // Restore action button if it was removed
-    if (_gridPreviousRightNavItem == _actionButton && _actionButton) {
-        [self.navigationItem setRightBarButtonItem:_gridPreviousRightNavItem animated:YES];
-    }
-    
     // Position prior to hide animation
     CGRect newPagingFrame = [self frameForPagingScrollView];
     newPagingFrame = CGRectOffset(newPagingFrame, 0, (self.startOnGrid ? 1 : -1) * newPagingFrame.size.height);
@@ -1534,6 +1594,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     
     // Update
     [self updateNavigation];
+    [self updateNavigationBarButtonsAnimated:YES];
     [self updateVisiblePageStates];
     
     // Animate, hide grid and show paging scroll view
@@ -1711,16 +1772,6 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 - (void)doneButtonPressed:(id)sender {
     // Only if we're modal and there's a done button
     if (_doneButton) {
-        // See if we actually just want to show/hide grid
-        if (self.enableGrid) {
-            if (self.startOnGrid && !_gridController) {
-                [self showGrid:YES];
-                return;
-            } else if (!self.startOnGrid && _gridController) {
-                [self hideGrid];
-                return;
-            }
-        }
         // Dismiss view controller
         if ([_delegate respondsToSelector:@selector(photoBrowserDidFinishModalPresentation:)]) {
             // Call delegate method and let them dismiss us
@@ -1730,6 +1781,32 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         }
     }
 }
+
+- (void)closeButtonPressed:(id)sender {
+    if (self.enableGrid) {
+        if (self.startOnGrid && !_gridController) {
+            [self showGrid:YES];
+            return;
+        } else if (!self.startOnGrid && _gridController) {
+            [self hideGrid];
+            return;
+        }
+    }
+}
+
+- (void)cancelButtonPressed:(id)sender {
+    if ([_delegate respondsToSelector:@selector(photoBrowserDidCancel::)]) {
+        // Call delegate method and let them dismiss us
+        [_delegate photoBrowserDidCancel:self];
+    } else  {
+        if (!_presentedWithBackButton) {
+            [self dismissViewControllerAnimated:YES completion:nil];
+        } else {
+            [self.navigationController popViewControllerAnimated:YES];
+        }
+    }
+}
+
 
 #pragma mark - Actions
 

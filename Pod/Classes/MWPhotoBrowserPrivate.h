@@ -39,8 +39,6 @@
     
     // Grid
     MWGridViewController *_gridController;
-    UIBarButtonItem *_gridPreviousLeftNavItem;
-    UIBarButtonItem *_gridPreviousRightNavItem;
     
     // Appearance
     BOOL _previousNavBarHidden;
@@ -128,7 +126,7 @@
 - (id<MWPhoto>)thumbPhotoAtIndex:(NSUInteger)index;
 - (UIImage *)imageForPhoto:(id<MWPhoto>)photo;
 - (BOOL)photoIsSelectedAtIndex:(NSUInteger)index;
-- (BOOL)canSelectPhotoAtIndex:(NSUInteger)idx;
+- (BOOL)shouldDisplaySelectionControlForItemAtIndex:(NSUInteger)idx;
 - (BOOL)setPhotoSelected:(BOOL)selected atIndex:(NSUInteger)index;
 - (void)loadAdjacentPhotosIfNecessary:(id<MWPhoto>)photo;
 - (void)releaseAllUnderlyingPhotos:(BOOL)preserveCurrent;

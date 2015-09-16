@@ -39,9 +39,11 @@ typedef NS_ENUM(NSInteger, MWPhotoBrowserMediaType) {
 - (void)photoBrowser:(MWPhotoBrowser *)photoBrowser didDisplayPhotoAtIndex:(NSUInteger)index;
 - (void)photoBrowser:(MWPhotoBrowser *)photoBrowser actionButtonPressedForPhotoAtIndex:(NSUInteger)index;
 - (BOOL)photoBrowser:(MWPhotoBrowser *)photoBrowser isPhotoSelectedAtIndex:(NSUInteger)index;
-- (BOOL)canSelectPhotoAtIndex:(NSUInteger)idx inPhotoBrowser:(MWPhotoBrowser *)photoBrowser;
+- (BOOL)shouldDisplaySelectionControlForItemAtIndex:(NSUInteger)idx inPhotoBrowser:(MWPhotoBrowser *)photoBrowser;
+- (BOOL)shouldSelectItemAtIndex:(NSUInteger)idx inPhotoBrowser:(MWPhotoBrowser *)photoBrowser;
 - (void)photoBrowser:(MWPhotoBrowser *)photoBrowser photoAtIndex:(NSUInteger)index selectedChanged:(BOOL)selected;
 - (void)photoBrowserDidFinishModalPresentation:(MWPhotoBrowser *)photoBrowser;
+- (void)photoBrowserDidCancel:(MWPhotoBrowser *)photoBrowser;
 
 - (NSString *)navigationBarTitleForGridSelectionModeWithItemCount:(NSUInteger)numberOfItems selectedItemCount:(NSUInteger)numberOfSelectedItems inPhotoBrowser:(MWPhotoBrowser *)photoBrowser;
 - (NSString *)navigationBarTitleForGridModeWithItemCount:(NSUInteger)numberOfItems inPhotoBrowser:(MWPhotoBrowser *)photoBrowser;
@@ -69,7 +71,13 @@ typedef NS_ENUM(NSInteger, MWPhotoBrowserMediaType) {
 @property (nonatomic) NSUInteger indexOfSingleSelectedItem;
 @property (nonatomic) NSIndexSet *indexesOfSelectedItems;
 
-@property (nonatomic) NSString *navigationBarTitle;
+@property (nonatomic, copy) NSString *navigationBarTitle;
+@property (nonatomic) UIBarButtonItem *leftNavigationBarButton;
+@property (nonatomic) UIBarButtonItem *rightNavigationBarButton;
+
+@property (nonatomic) BOOL showsCancelButton;
+@property (nonatomic, copy) NSString *cancelButtonTitle;
+@property (nonatomic, copy) NSString *doneButtonTitle;
 
 // Customise image selection icons as they are the only icons with a colour tint
 // Icon should be located in the app's main bundle
