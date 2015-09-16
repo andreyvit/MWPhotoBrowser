@@ -753,7 +753,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         }
 
         if (selected && !_allowsMultipleSelection) {
-            [self deselectAll];
+            [self _deselectAll];
         }
 
         if (!_delegateRespondsToIsPhotoSelectedAtIndex) {
@@ -769,6 +769,8 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         }
 
         [_gridController updateSelectionStateForItemAtIndex:idx];
+
+        [self updateNavigation];
     }
     return YES;
 }
@@ -799,12 +801,12 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
 - (void)setIndexOfSingleSelectedItem:(NSUInteger)idx {
     if (idx != self.indexOfSingleSelectedItem) {
-        [self deselectAll];
+        [self _deselectAll];
         [self setPhotoSelected:YES atIndex:idx];
     }
 }
 
-- (void)deselectAll {
+- (void)_deselectAll {
     NSIndexSet *set = [self.indexesOfSelectedItems copy];
     if (!_delegateRespondsToIsPhotoSelectedAtIndex) {
         [_indexesOfSelectedItems removeAllIndexes];
@@ -1187,9 +1189,12 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
 #pragma mark - Navigation
 
-- (NSString *)navigationBarTitleForGridSelectionModeWithItemCount:(NSUInteger)numberOfItems {
-    if ([_delegate respondsToSelector:@selector(navigationBarTitleForGridSelectionModeWithItemCount:inPhotoBrowser:)]) {
-        return [_delegate navigationBarTitleForGridSelectionModeWithItemCount:numberOfItems inPhotoBrowser:self];
+- (NSString *)navigationBarTitleForGridSelectionModeWithItemCount:(NSUInteger)numberOfItems selectedItemCount:(NSUInteger)numberOfSelectedItems {
+    if ([_delegate respondsToSelector:@selector(navigationBarTitleForGridSelectionModeWithItemCount:selectedItemCount:inPhotoBrowser:)]) {
+        NSString *result = [_delegate navigationBarTitleForGridSelectionModeWithItemCount:numberOfItems selectedItemCount:numberOfSelectedItems inPhotoBrowser:self];
+        if (result) {
+            return result;
+        }
     }
 
     if (_navigationBarTitle) {
@@ -1242,7 +1247,10 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
 - (NSString *)navigationBarTitleForSingleModeWithItemIndex:(NSUInteger)itemIndex itemCount:(NSUInteger)numberOfItems {
     if ([_delegate respondsToSelector:@selector(photoBrowser:titleForPhotoAtIndex:)]) {
-        return [_delegate photoBrowser:self titleForPhotoAtIndex:_currentPageIndex];
+        NSString *result = [_delegate photoBrowser:self titleForPhotoAtIndex:_currentPageIndex];
+        if (result) {
+            return result;
+        }
     }
 
     NSString *fmt = NSLocalizedString(@"XX of YY", @"Used in the context: 'Showing 1 of 3 items'");
@@ -1255,7 +1263,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     NSUInteger numberOfPhotos = [self numberOfPhotos];
     if (_gridController) {
         if (_gridController.selectionMode) {
-            self.title = [self navigationBarTitleForGridSelectionModeWithItemCount:numberOfPhotos];
+            self.title = [self navigationBarTitleForGridSelectionModeWithItemCount:numberOfPhotos selectedItemCount:self.indexesOfSelectedItems.count];
         } else {
             self.title = [self navigationBarTitleForGridModeWithItemCount:numberOfPhotos];
         }

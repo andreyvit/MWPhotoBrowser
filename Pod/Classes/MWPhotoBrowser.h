@@ -43,7 +43,7 @@ typedef NS_ENUM(NSInteger, MWPhotoBrowserMediaType) {
 - (void)photoBrowser:(MWPhotoBrowser *)photoBrowser photoAtIndex:(NSUInteger)index selectedChanged:(BOOL)selected;
 - (void)photoBrowserDidFinishModalPresentation:(MWPhotoBrowser *)photoBrowser;
 
-- (NSString *)navigationBarTitleForGridSelectionModeWithItemCount:(NSUInteger)numberOfItems inPhotoBrowser:(MWPhotoBrowser *)photoBrowser;
+- (NSString *)navigationBarTitleForGridSelectionModeWithItemCount:(NSUInteger)numberOfItems selectedItemCount:(NSUInteger)numberOfSelectedItems inPhotoBrowser:(MWPhotoBrowser *)photoBrowser;
 - (NSString *)navigationBarTitleForGridModeWithItemCount:(NSUInteger)numberOfItems inPhotoBrowser:(MWPhotoBrowser *)photoBrowser;
 
 @end
