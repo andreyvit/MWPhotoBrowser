@@ -84,6 +84,8 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     _startOnGrid = NO;
     _enableSwipeToDismiss = YES;
     _delayToHideElements = 5;
+    _maxAspectRationDifferenceThatAllowsFill = 0.17; // Zooms standard portrait images on a 3.5in screen but not on a 4in screen.
+
     _visiblePages = [[NSMutableSet alloc] init];
     _recycledPages = [[NSMutableSet alloc] init];
     _photos = [[NSMutableArray alloc] init];
