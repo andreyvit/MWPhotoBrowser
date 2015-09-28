@@ -64,6 +64,7 @@ typedef NS_ENUM(NSInteger, MWPhotoBrowserMediaType) {
 @property (nonatomic) BOOL enableSwipeToDismiss;
 @property (nonatomic) BOOL startOnGrid;
 @property (nonatomic) BOOL autoPlayOnAppear;
+@property (nonatomic) BOOL disablesDoneButtonOnEmptySelection;
 @property (nonatomic) NSUInteger delayToHideElements;
 @property (nonatomic) MWPhotoBrowserMediaType mediaType;
 @property (nonatomic, readonly) NSUInteger currentIndex;

@@ -1307,7 +1307,10 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         _actionButton.enabled = YES;
         _actionButton.tintColor = nil;
     }
-	
+
+    if (_disablesDoneButtonOnEmptySelection) {
+        _doneButton.enabled = (self.indexesOfSelectedItems.count > 0);
+    }
 }
 
 - (BOOL)isOnSecondaryScreen {
