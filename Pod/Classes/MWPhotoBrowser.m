@@ -84,6 +84,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     _startOnGrid = NO;
     _enableSwipeToDismiss = YES;
     _delayToHideElements = 5;
+    _preferHiddenControls = NO;
     _maxAspectRationDifferenceThatAllowsFill = 0.17; // Zooms standard portrait images on a 3.5in screen but not on a 4in screen.
 
     _visiblePages = [[NSMutableSet alloc] init];
@@ -386,10 +387,16 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [self storePreviousNavBarAppearance];
     }
     [self setNavBarAppearance:animated];
-    
+
     // Update UI
-	[self hideControlsAfterDelay];
-    
+    if (_preferHiddenControls) {
+        [self.navigationController setNavigationBarHidden:YES animated:animated];
+        [self setControlsHidden:YES animated:NO animateStatusBar:animated permanent:YES];
+    } else {
+        [self.navigationController setNavigationBarHidden:NO animated:animated];
+        [self hideControlsAfterDelay];
+    }
+
     // Initial appearance
     if (!_viewHasAppearedInitially) {
         if (_startOnGrid) {
@@ -468,7 +475,6 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 #pragma mark - Nav Bar Appearance
 
 - (void)setNavBarAppearance:(BOOL)animated {
-    [self.navigationController setNavigationBarHidden:NO animated:animated];
     UINavigationBar *navBar = self.navigationController.navigationBar;
     navBar.tintColor = [UIColor whiteColor];
     navBar.barTintColor = nil;
@@ -1601,7 +1607,11 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     [self updateNavigation];
     [self updateNavigationBarButtonsAnimated:YES];
     [self updateVisiblePageStates];
-    
+
+    if (_preferHiddenControls) {
+        [self setControlsHidden:YES animated:YES permanent:YES]; // retrigger timer
+    }
+
     // Animate, hide grid and show paging scroll view
     [UIView animateWithDuration:0.3 animations:^{
         tmpGridController.view.frame = CGRectOffset(self.view.bounds, 0, (self.startOnGrid ? -1 : 1) * self.view.bounds.size.height);
@@ -1610,20 +1620,30 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [tmpGridController willMoveToParentViewController:nil];
         [tmpGridController.view removeFromSuperview];
         [tmpGridController removeFromParentViewController];
-        [self setControlsHidden:NO animated:YES permanent:NO]; // retrigger timer
+
+        if (!_preferHiddenControls) {
+            [self setControlsHidden:NO animated:YES permanent:NO]; // retrigger timer
+        }
     }];
 
 }
 
 #pragma mark - Control Hiding / Showing
 
+- (void)setControlsHidden:(BOOL)hidden animated:(BOOL)animated permanent:(BOOL)permanent {
+    [self setControlsHidden:hidden animated:animated animateStatusBar:animated permanent:permanent];
+}
+
 // If permanent then we don't set timers to hide again
 // Fades all controls on iOS 5 & 6, and iOS 7 controls slide and fade
-- (void)setControlsHidden:(BOOL)hidden animated:(BOOL)animated permanent:(BOOL)permanent {
+- (void)setControlsHidden:(BOOL)hidden animated:(BOOL)animated animateStatusBar:(BOOL)animateStatusBar permanent:(BOOL)permanent {
+    NSLog(@"setControlsHidden:%@ animated:%@ permanent:%@", (hidden ? @"YES" : @"NO"), (animated ? @"YES" : @"NO"), (permanent ? @"YES" : @"NO"));
     
     // Force visible
-    if (![self numberOfPhotos] || _gridController || _alwaysShowControls)
+    if (![self numberOfPhotos] || _gridController || _alwaysShowControls) {
         hidden = NO;
+        NSLog(@"setControlsHidden: force visible");
+    }
     
     // Cancel any timers
     [self cancelControlHiding];
@@ -1631,7 +1651,12 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     // Animations & positions
     CGFloat animatonOffset = 20;
     CGFloat animationDuration = (animated ? 0.35 : 0);
-    
+    CGFloat statusBarAnimationDuration = (animateStatusBar ? 0.35 : 0);
+
+    if (!hidden) {
+        [self.navigationController setNavigationBarHidden:hidden];
+    }
+
     // Status bar
     if (!_leaveStatusBarAlone) {
 
@@ -1639,13 +1664,13 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         if (!_isVCBasedStatusBarAppearance) {
             
             // Non-view controller based
-            [[UIApplication sharedApplication] setStatusBarHidden:hidden withAnimation:animated ? UIStatusBarAnimationSlide : UIStatusBarAnimationNone];
+            [[UIApplication sharedApplication] setStatusBarHidden:hidden withAnimation:animateStatusBar ? UIStatusBarAnimationSlide : UIStatusBarAnimationNone];
             
         } else {
             
             // View controller based so animate away
             _statusBarShouldBeHidden = hidden;
-            [UIView animateWithDuration:animationDuration animations:^(void) {
+            [UIView animateWithDuration:statusBarAnimationDuration animations:^(void) {
                 [self setNeedsStatusBarAppearanceUpdate];
             } completion:^(BOOL finished) {}];
             
@@ -1672,6 +1697,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         }
         
     }
+
     [UIView animateWithDuration:animationDuration animations:^(void) {
         
         CGFloat alpha = hidden ? 0 : 1;
@@ -1707,7 +1733,11 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
             }
         }
 
-    } completion:^(BOOL finished) {}];
+    } completion:^(BOOL finished) {
+        if (hidden) {
+            [self.navigationController setNavigationBarHidden:hidden];
+        }
+    }];
     
 	// Control hiding timer
 	// Will cancel existing timer but only begin hiding if

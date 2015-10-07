@@ -61,6 +61,7 @@ typedef NS_ENUM(NSInteger, MWPhotoBrowserMediaType) {
 @property (nonatomic) BOOL allowsMultipleSelection;
 @property (nonatomic) BOOL allowsEmptySelection;
 @property (nonatomic) BOOL alwaysShowControls;
+@property (nonatomic) BOOL preferHiddenControls;
 @property (nonatomic) BOOL enableGrid;
 @property (nonatomic) BOOL enableSwipeToDismiss;
 @property (nonatomic) BOOL startOnGrid;
