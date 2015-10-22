@@ -1934,3 +1934,8 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 }
 
 @end
+
+
+BOOL IsLandscape(CGSize size) {
+    return size.width > size.height;
+}

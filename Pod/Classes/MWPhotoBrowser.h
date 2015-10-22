@@ -26,6 +26,8 @@ typedef NS_ENUM(NSInteger, MWPhotoBrowserMediaType) {
     MWPhotoBrowserMediaTypeVideos,
 };
 
+BOOL IsLandscape(CGSize size);
+
 @protocol MWPhotoBrowserDelegate <NSObject>
 
 - (NSUInteger)numberOfPhotosInPhotoBrowser:(MWPhotoBrowser *)photoBrowser;
